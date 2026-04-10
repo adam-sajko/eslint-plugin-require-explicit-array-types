@@ -17,6 +17,9 @@
     "type": "git",
     "url": "https://github.com/adam-sajko/eslint-plugin-require-explicit-array-types"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
