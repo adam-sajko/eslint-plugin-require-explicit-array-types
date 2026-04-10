@@ -1,0 +1,53 @@
+{
+  "name": "eslint-plugin-require-explicit-array-types",
+  "version": "1.0.0",
+  "description": "ESLint plugin requiring explicit type annotations for empty arrays",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "typescript",
+    "array",
+    "type-annotation",
+    "explicit-types"
+  ],
+  "author": "Adam Sajko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adam-sajko/eslint-plugin-require-explicit-array-types"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0",
+    "@typescript-eslint/parser": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@typescript-eslint/parser": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@typescript-eslint/rule-tester": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/utils": "^8.0.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@typescript-eslint/utils": "^8.0.0"
+  }
+}
