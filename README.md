@@ -1,6 +1,6 @@
 # eslint-plugin-require-explicit-array-types
 
-ESLint plugin that requires explicit type annotations for empty arrays. Catches `[]`, `new Array()`, and `Array()` in variable declarations and class properties.
+ESLint plugin that requires explicit type annotations for empty arrays. Catches `[]`, `new Array()`, and `Array()` in variable declarations, class properties, and object literal properties.
 
 ## Why?
 
@@ -53,6 +53,11 @@ class Foo {
   items = [];
   data = new Array();
 }
+
+const obj = {
+  items: [],
+  data: new Array(),
+};
 ```
 
 ```ts
@@ -67,6 +72,12 @@ class Foo {
   data: number[] = new Array();
 }
 
+// Object literal properties use a type assertion on the value
+const obj = {
+  items: [] as string[],
+  data: new Array<number>(),
+};
+
 // Non-empty arrays don't need annotations
 const numbers = [1, 2, 3];
 
@@ -76,7 +87,7 @@ const typed = [] as string[];
 
 ### Suggestion fix
 
-The rule provides a suggestion fix to add `: unknown[]`, which you can then narrow to the correct type.
+The rule provides a suggestion fix which you can then narrow to the correct type. For variable declarations and class properties it adds a `: unknown[]` type annotation; for object literal properties it adds an `as unknown[]` type assertion (since properties can't carry an inline annotation).
 
 ### Options
 

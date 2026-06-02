@@ -108,6 +108,23 @@ class Foo {
 }
     `,
 
+    // Object literal properties with type assertions
+    'const obj = { arr: [] as string[] };',
+    'const obj = { arr: [] as number[] };',
+    'const obj = { arr: new Array<string>() };',
+
+    // Object literal properties with non-empty arrays
+    'const obj = { arr: [1, 2, 3] };',
+    "const obj = { arr: ['a', 'b'] };",
+
+    // Object literal shorthand and methods
+    'const arr: string[] = []; const obj = { arr };',
+    'const obj = { add() {} };',
+
+    // Destructuring with array default (not an object literal value)
+    'const { arr = [] } = input;',
+    'function fn({ arr = [] }) {}',
+
     // ignoreMutableVariables: let and var ignored
     {
       code: 'let arr = [];',
@@ -496,6 +513,118 @@ class Foo {
   items: unknown[] = [];
 }
       `,
+            },
+          ],
+        },
+      ],
+    },
+
+    // Object literal property — empty array literal
+    {
+      code: 'const obj = { arr: [] };',
+      errors: [
+        {
+          messageId: 'missingTypeAnnotationProperty',
+          data: { name: 'arr' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: 'const obj = { arr: [] as unknown[] };',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Object literal property — new Array()
+    {
+      code: 'const obj = { arr: new Array() };',
+      errors: [
+        {
+          messageId: 'missingTypeAnnotationNewArrayProperty',
+          data: { name: 'arr' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: 'const obj = { arr: new Array() as unknown[] };',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Object literal property — Array() call
+    {
+      code: 'const obj = { arr: Array() };',
+      errors: [
+        {
+          messageId: 'missingTypeAnnotationNewArrayProperty',
+          data: { name: 'arr' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: 'const obj = { arr: Array() as unknown[] };',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Object literal property — string-literal key
+    {
+      code: "const obj = { 'my-arr': [] };",
+      errors: [
+        {
+          messageId: 'missingTypeAnnotationProperty',
+          data: { name: 'my-arr' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: "const obj = { 'my-arr': [] as unknown[] };",
+            },
+          ],
+        },
+      ],
+    },
+
+    // Nested object literal properties
+    {
+      code: 'const obj = { outer: { inner: [] } };',
+      errors: [
+        {
+          messageId: 'missingTypeAnnotationProperty',
+          data: { name: 'inner' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: 'const obj = { outer: { inner: [] as unknown[] } };',
+            },
+          ],
+        },
+      ],
+    },
+
+    // Multiple properties, mixed typed and untyped
+    {
+      code: 'const obj = { a: [], b: [] as number[], c: [] };',
+      errors: [
+        {
+          messageId: 'missingTypeAnnotationProperty',
+          data: { name: 'a' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: 'const obj = { a: [] as unknown[], b: [] as number[], c: [] };',
+            },
+          ],
+        },
+        {
+          messageId: 'missingTypeAnnotationProperty',
+          data: { name: 'c' },
+          suggestions: [
+            {
+              messageId: 'suggestUnknownArrayAssertion',
+              output: 'const obj = { a: [], b: [] as number[], c: [] as unknown[] };',
             },
           ],
         },
