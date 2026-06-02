@@ -7,7 +7,7 @@ const rules = {
 const plugin = {
   meta: {
     name: 'eslint-plugin-require-explicit-array-types',
-    version: '1.0.0',
+    version: '1.1.0',
   },
   rules,
   configs: {
