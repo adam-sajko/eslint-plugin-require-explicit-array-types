@@ -1,3 +1,6 @@
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import * as vitest from 'vitest';
 
@@ -8,7 +11,22 @@ RuleTester.itOnly = vitest.it.only;
 
 import rule from '../../src/rules/require-explicit-array-types';
 
-const ruleTester = new RuleTester();
+const fixturesDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'fixtures',
+);
+
+const ruleTester = new RuleTester({
+  languageOptions: {
+    parserOptions: {
+      projectService: {
+        allowDefaultProject: ['*.ts*'],
+      },
+      tsconfigRootDir: fixturesDir,
+    },
+  },
+});
 
 ruleTester.run('require-explicit-array-types', rule, {
   valid: [
@@ -138,6 +156,32 @@ class Foo {
       code: 'let arr = new Array();',
       options: [{ ignoreMutableVariables: true }],
     },
+
+    // Contextually-typed empty arrays: the element type is already known
+
+    // Object literal property inside a typed variable
+    'interface Cfg { arr: string[] } const cfg: Cfg = { arr: [] };',
+    'const cfg: { arr: string[] } = { arr: [] };',
+    'const cfg: { arr: string[] } = { arr: new Array() };',
+
+    // Deeply nested typed object literal
+    'const cfg: { outer: { inner: string[] } } = { outer: { inner: [] } };',
+
+    // Function return position
+    'function make(): { arr: string[] } { return { arr: [] }; }',
+    'const make = (): { arr: string[] } => ({ arr: [] });',
+
+    // Typed array elements
+    'const list: { arr: string[] }[] = [{ arr: [] }];',
+
+    // Contextually-typed call argument holding a typed property
+    'declare function use(cfg: { arr: string[] }): void; use({ arr: [] });',
+
+    // satisfies provides the contextual type
+    'const cfg = { arr: [] } satisfies { arr: string[] };',
+
+    // Contextually-typed variable via a mapped/generic alias
+    'type Cfg<T> = { arr: T[] }; const cfg: Cfg<number> = { arr: [] };',
   ],
   invalid: [
     // Basic variable declarations — empty array literal
@@ -519,7 +563,7 @@ class Foo {
       ],
     },
 
-    // Object literal property — empty array literal
+    // Object literal property — empty array literal (untyped object)
     {
       code: 'const obj = { arr: [] };',
       errors: [
@@ -587,7 +631,7 @@ class Foo {
       ],
     },
 
-    // Nested object literal properties
+    // Nested object literal properties (untyped)
     {
       code: 'const obj = { outer: { inner: [] } };',
       errors: [

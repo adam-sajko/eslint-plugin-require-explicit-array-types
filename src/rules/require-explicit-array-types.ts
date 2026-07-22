@@ -1,6 +1,11 @@
 import { AST_NODE_TYPES, ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
+import type * as ts from 'typescript';
 
-const createRule = ESLintUtils.RuleCreator(
+export interface PluginDocs {
+  requiresTypeChecking?: boolean;
+}
+
+const createRule = ESLintUtils.RuleCreator<PluginDocs>(
   () => 'https://github.com/adam-sajko/eslint-plugin-require-explicit-array-types#rule-require-explicit-array-types',
 );
 
@@ -24,6 +29,7 @@ export default createRule<Options, MessageIds>({
     docs: {
       description:
         'Require explicit type annotations for empty arrays for code clarity',
+      requiresTypeChecking: true,
     },
     hasSuggestions: true,
     messages: {
@@ -54,6 +60,9 @@ export default createRule<Options, MessageIds>({
   },
   defaultOptions: [{ ignoreMutableVariables: false }],
   create(context, [option]) {
+    const services = ESLintUtils.getParserServices(context);
+    const checker = services.program.getTypeChecker();
+
     function isEmptyArrayLiteral(node: TSESTree.Node): boolean {
       return (
         node.type === AST_NODE_TYPES.ArrayExpression &&
@@ -72,6 +81,26 @@ export default createRule<Options, MessageIds>({
       );
     }
 
+    // An array with a contextual type already has a known element type, so it
+    // does not need an explicit annotation.
+    function hasContextualType(node: TSESTree.Node): boolean {
+      const tsNode = services.esTreeNodeToTSNodeMap.get(node);
+      return checker.getContextualType(tsNode as ts.Expression) !== undefined;
+    }
+
+    function isUnannotatedEmptyArray(
+      node: TSESTree.Node,
+    ): { empty: true; isNewArray: boolean } | { empty: false } {
+      const isNewArray = isEmptyNewArray(node);
+      if (!isEmptyArrayLiteral(node) && !isNewArray) {
+        return { empty: false };
+      }
+      if (hasContextualType(node)) {
+        return { empty: false };
+      }
+      return { empty: true, isNewArray };
+    }
+
     function checkVariableDeclarator(node: TSESTree.VariableDeclarator): void {
       const id = node.id;
       if (id.type !== AST_NODE_TYPES.Identifier || id.typeAnnotation) {
@@ -86,14 +115,14 @@ export default createRule<Options, MessageIds>({
         return;
       }
 
-      const isNewArray = isEmptyNewArray(node.init);
-      if (!isEmptyArrayLiteral(node.init) && !isNewArray) {
+      const result = isUnannotatedEmptyArray(node.init);
+      if (!result.empty) {
         return;
       }
 
       context.report({
         node,
-        messageId: isNewArray
+        messageId: result.isNewArray
           ? 'missingTypeAnnotationNewArray'
           : 'missingTypeAnnotation',
         data: { name: id.name },
@@ -115,10 +144,12 @@ export default createRule<Options, MessageIds>({
         return;
       }
 
-      if (
-        !node.value ||
-        (!isEmptyArrayLiteral(node.value) && !isEmptyNewArray(node.value))
-      ) {
+      if (!node.value) {
+        return;
+      }
+
+      const result = isUnannotatedEmptyArray(node.value);
+      if (!result.empty) {
         return;
       }
 
@@ -130,11 +161,9 @@ export default createRule<Options, MessageIds>({
             ? String(key.value)
             : '(computed)';
 
-      const isNewArray = isEmptyNewArray(node.value);
-
       context.report({
         node,
-        messageId: isNewArray
+        messageId: result.isNewArray
           ? 'missingTypeAnnotationNewArray'
           : 'missingTypeAnnotation',
         data: { name },
@@ -165,10 +194,12 @@ export default createRule<Options, MessageIds>({
       }
 
       const value = node.value;
-      if (
-        value.type === AST_NODE_TYPES.AssignmentPattern ||
-        (!isEmptyArrayLiteral(value) && !isEmptyNewArray(value))
-      ) {
+      if (value.type === AST_NODE_TYPES.AssignmentPattern) {
+        return;
+      }
+
+      const result = isUnannotatedEmptyArray(value);
+      if (!result.empty) {
         return;
       }
 
@@ -180,11 +211,9 @@ export default createRule<Options, MessageIds>({
             ? String(key.value)
             : '(computed)';
 
-      const isNewArray = isEmptyNewArray(value);
-
       context.report({
         node,
-        messageId: isNewArray
+        messageId: result.isNewArray
           ? 'missingTypeAnnotationNewArrayProperty'
           : 'missingTypeAnnotationProperty',
         data: { name },
